@@ -24,7 +24,7 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
     :param max_len: don't sample captions longer than this length
     """
 
-    assert dataset in {'coco', 'flickr8k', 'flickr30k'}
+    assert dataset in {'coco', 'flickr8k', 'flickr30k','rsicd'}
 
     # Read Karpathy JSON
     with open(karpathy_json_path, 'r') as j:
@@ -53,7 +53,7 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
         path = os.path.join(image_folder, img['filepath'], img['filename']) if dataset == 'coco' else os.path.join(
             image_folder, img['filename'])
 
-        if img['split'] in {'train', 'restval'}:
+        if img['split'] in {'train'}:
             train_image_paths.append(path)
             train_image_captions.append(captions)
         elif img['split'] in {'val'}:
@@ -88,7 +88,6 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
     for impaths, imcaps, split in [(train_image_paths, train_image_captions, 'TRAIN'),
                                    (val_image_paths, val_image_captions, 'VAL'),
                                    (test_image_paths, test_image_captions, 'TEST')]:
-
         with h5py.File(os.path.join(output_folder, split + '_IMAGES_' + base_filename + '.hdf5'), 'a') as h:
             # Make a note of the number of captions we are sampling per image
             h.attrs['captions_per_image'] = captions_per_image
@@ -114,7 +113,6 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
 
                 # Read images
                 img = cv2.imread(impaths[i])
-
                 if len(img.shape) == 2:
                      img = img[:, :, np.newaxis]
                      img = np.concatenate([img, img, img], axis=2)
