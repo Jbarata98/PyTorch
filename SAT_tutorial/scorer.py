@@ -3,14 +3,17 @@ from pycocoevalcap.cider.cider import Cider
 from pycocoevalcap.meteor.meteor import Meteor
 from pycocoevalcap.rouge.rouge import Rouge
 from pycocoevalcap.spice.spice import Spice
-import json
-from bert_score import score
+from bert_score import score as bert_sc
 from eval import *
+from bleurt import score as bleurt_sc
+import statistics
+from itertools import repeat
+
 
 EVALUATE = False
 JSON_results = 'hypothesis'
 JSON_refs = 'references'
-
+bleurt_checkpoint = "bleurt/test_checkpoint" #uses Tiny Bleurt
 
 def create_json(hyp,refs):
     hyp_dict, ref_dict = {},{}
@@ -64,34 +67,39 @@ def spice(gts, res):
     print('SPICE = %s' % score)
 
 def bert_based(gts,res):
-    refs = []
-
-    cands =[]
+    refs, cands = [], []
     for refers in gts.values():
         sub_refs = []
         for ref in refers:
-            sub_refs.append(ref)
+            sub_refs.append(ref + '.')
         refs.append(sub_refs)
-    print(len(refs))
     for cand in res.values():
-        cands.append(cand[0] +'.')
-    print(len(cands))
+        cands.append(cand[0] + '.')
+    #
+    P, R, F1 = bert_sc(cands, refs, lang='en', verbose=True)
+    print('BERTScore = %s' % F1.mean().item())
 
-    P, R, F1 = score(cands, refs, lang='en', verbose=True)
-    print(F1.mean())
+    refs_bleurt = ''
+    refs_bleurt_list =[]
+    for ref in refs:
+        for ref_cap in ref:
+            refs_bleurt_list.append(ref_cap)
 
+    cands = [x for item in cands for x in repeat(item,5)]
 
+    scorer = bleurt_sc.BleurtScorer(bleurt_checkpoint)
 
-
-
+    scores = scorer.score(refs_bleurt_list, cands, batch_size=None)
+    assert type(scores) == list
+    print('BLEURT = %s' % statistics.mean(scores))
 
 def main():
     gts,res = open_json()
-    # bleu(gts,res)
-    # cider(gts,res)
-    # meteor(gts,res)
-    # rouge(gts,res)
-    # spice(gts,res)
+    bleu(gts,res)
+    cider(gts,res)
+    meteor(gts,res)
+    rouge(gts,res)
+    spice(gts,res)
     bert_based(gts,res)
 
 if EVALUATE:
