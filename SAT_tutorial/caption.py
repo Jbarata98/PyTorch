@@ -147,7 +147,7 @@ def caption_image_beam_search(encoder, decoder, image_path, word_map, beam_size=
     return seq, alphas
 
 
-def visualize_att(image_path, seq, alphas, rev_word_map, smooth=True):
+def visualize_att(image_path, seq, alphas, rev_word_map,save_name, smooth=True):
     """
     Visualizes caption with weights at every word.
     Adapted from paper authors' repo: https://github.com/kelvinxu/arctic-captions/blob/master/alpha_visualization.ipynb
@@ -180,6 +180,7 @@ def visualize_att(image_path, seq, alphas, rev_word_map, smooth=True):
             plt.imshow(alpha, alpha=0.8)
         plt.set_cmap(cm.Greys_r)
         plt.axis('off')
+    plt.savefig(save_name +'.png')
     plt.show()
 
 
@@ -190,6 +191,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', '-m', help='path to model')
     parser.add_argument('--word_map', '-wm', help='path to word map JSON')
     parser.add_argument('--beam_size', '-b', default=5, type=int, help='beam size for beam search')
+    parser.add_argument('--save_name', '-s')
+
     parser.add_argument('--dont_smooth', dest='smooth', action='store_false', help='do not smooth alpha overlay')
 
     args = parser.parse_args()
@@ -213,4 +216,4 @@ if __name__ == '__main__':
     alphas = torch.FloatTensor(alphas)
 
     # Visualize caption and attention of best sequence
-    visualize_att(args.img, seq, alphas, rev_word_map, args.smooth)
+    visualize_att(args.img, seq, alphas, rev_word_map, args.save_name, args.smooth)
