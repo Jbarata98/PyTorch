@@ -14,6 +14,8 @@ EVALUATE = False
 JSON_results = 'hypothesis'
 JSON_refs = 'references'
 bleurt_checkpoint = "bleurt/test_checkpoint" #uses Tiny Bleurt
+out_file = open("evaluation_results.txt", "w")
+
 
 def create_json(hyp,refs):
     hyp_dict, ref_dict = {},{}
@@ -43,28 +45,33 @@ def bleu(gts,res):
 
     score, scores = scorer.compute_score(gts, res)
 
-    print('BLEU(1-4) = %s' % score)
+    out_file.write('BLEU(1-4) = %s' % score + '\n')
+
+    return score
 
 def cider(gts,res):
     scorer = Cider()
     # scorer += (hypo[0], ref1)
     (score, scores) = scorer.compute_score(gts, res)
-    print('CIDEr = %s' % score)
+    out_file.write('CIDEr = %s' % score + '\n')
 
 def meteor(gts,res):
     scorer = Meteor()
     score, scores = scorer.compute_score(gts, res)
-    print('METEOR = %s' % score)
+    out_file.write('METEOR = %s' % score + '\n')
+    return score
 
 def rouge(gts,res):
     scorer = Rouge()
     score, scores = scorer.compute_score(gts, res)
-    print('ROUGE = %s' % score)
+    out_file.write('ROUGE = %s' % score + '\n')
+    return score
 
 def spice(gts, res):
     scorer = Spice()
     score, scores = scorer.compute_score(gts, res)
-    print('SPICE = %s' % score)
+    out_file.write('SPICE = %s' % score + '\n')
+    return score
 
 def bert_based(gts,res):
     refs, cands = [], []
@@ -77,7 +84,8 @@ def bert_based(gts,res):
         cands.append(cand[0] + '.')
     #
     P, R, F1 = bert_sc(cands, refs, lang='en', verbose=True)
-    print('BERTScore = %s' % F1.mean().item())
+    out_file.write('BERTScore = %s' % F1.mean().item() + "\n")
+    BERTScore = F1.mean().item()
 
     refs_bleurt = ''
     refs_bleurt_list =[]
@@ -91,7 +99,9 @@ def bert_based(gts,res):
 
     scores = scorer.score(refs_bleurt_list, cands, batch_size=None)
     assert type(scores) == list
-    print('BLEURT = %s' % statistics.mean(scores))
+    out_file.write('BLEURT = %s' % statistics.mean(scores))
+    BLEURT = statistics.mean(scores)
+    return BERTScore, BLEURT
 
 def main():
     gts,res = open_json()
@@ -101,6 +111,7 @@ def main():
     rouge(gts,res)
     spice(gts,res)
     bert_based(gts,res)
+    out_file.close()
 
 if EVALUATE:
 
