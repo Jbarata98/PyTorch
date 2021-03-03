@@ -11,12 +11,12 @@ from tqdm import tqdm
 
 # Parameters
 data_folder = 'caption_datasets/'  # folder with data files saved by create_input_files.py
-data_name = 'rsicd_5_cap_per_img_5_min_word_freq'  # base name shared by data files
-checkpoint = 'BEST_checkpoint_rsicd_5_cap_per_img_5_min_word_freq.pth.tar'  # model checkpoint
-word_map_file = 'caption_datasets/WORDMAP_rsicd_5_cap_per_img_5_min_word_freq.json'  # word map, ensure it's the same the data was encoded with and the model was trained with
+data_name = 'rsicd_5_cap_per_img_2_min_word_freq'  # base name shared by data files
+checkpoint = 'BEST_checkpoint_rsicd_5_cap_per_img_2_min_word_freq.pth.tar'  # model checkpoint
+word_map_file = 'caption_datasets/WORDMAP_rsicd_5_cap_per_img_2_min_word_freq.json'  # word map, ensure it's the same the data was encoded with and the model was trained with
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
 cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
-beam_size = 1
+beam_size = 3
 
 # Load model
 checkpoint = torch.load(checkpoint, map_location=torch.device('cpu'))
@@ -41,7 +41,7 @@ def evaluate(beam_size):
     """
     Evaluation
     :param beam_size: beam size at which to generate captions for evaluation
-    :return: BLEU-4 score
+    :return: reference and candidate scores
     """
     # DataLoader
     loader = torch.utils.data.DataLoader(
@@ -159,29 +159,15 @@ def evaluate(beam_size):
         # References
         img_caps = allcaps[0].tolist()
         img_captions = list(
-            map(lambda c: [' '.join(rev_word_map[w] for w in c if w not in {1171,1172 ,0 })],
+            map(lambda c: [' '.join(rev_word_map[w] for w in c if w not in {1601,1602,0 })],
                 img_caps))  # remove <start> and pads
         references.append(img_captions)
         # Hypotheses
-        hypotheses.append(' '.join(rev_word_map[w] for w in seq if w not in {1171,1172, 0}))
-
-
+        hypotheses.append(' '.join(rev_word_map[w] for w in seq if w not in {1601,1602, 0}))
 
         assert len(references) == len(hypotheses)
 
-    # Calculate BLEU-4 scores
-    # bleu1 = corpus_bleu(references, hypotheses, (1.0/1.0,))
-    # bleu2 = corpus_bleu(references, hypotheses, (1.0/2.0, 1.0/2.0,))
-    # bleu3 = corpus_bleu(references, hypotheses, (1.0/3.0, 1/0/3.0, 1.0/3.0,))
-    # bleu4 = corpus_bleu(references, hypotheses, (1.0/4.0, 1.0/4.0, 1.0/4.0, 1.0/4.0,))
-    # meteor = meteor_score(references,hypothesis = ''.join(hypotheses))
-    #
-    # return {'BLEU-1': bleu1,
-    #         'BLEU-2': bleu2,
-    #         'BLEU-3': bleu3,
-    #         'BLEU-4': bleu4,
-    #         'METEOR': meteor,
-    #         }
+
 
     return references,hypotheses
 #

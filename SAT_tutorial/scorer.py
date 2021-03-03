@@ -8,15 +8,14 @@ from bert_score import BERTScorer
 from eval import *
 from bleurt import score as bleurt_sc
 import statistics
-from itertools import repeat
 
 
 EVALUATE = False
+ATTENTION = 'soft_attention' #TODO hard_attention
 JSON_results = 'hypothesis'
 JSON_refs = 'references'
 bleurt_checkpoint = "bleurt/test_checkpoint" #uses Tiny Bleurt
-out_file = open("evaluation_results.txt", "w")
-
+out_file = open("evaluation_results_" + ATTENTION + ".txt" , "w")
 
 def create_json(hyp,refs):
     hyp_dict, ref_dict = {},{}

@@ -11,8 +11,8 @@ from random import seed, choice, sample
 import cv2
 import torchvision.transforms
 
-def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_image, min_word_freq, output_folder,
-                       max_len=100):
+def create_input_files(dataset, json_path, image_folder, captions_per_image, min_word_freq, output_folder,
+                       max_len=1000):
     """
     Creates input files for training, validation, and test data.
     :param dataset: name of dataset, one of 'coco', 'flickr8k', 'flickr30k'
@@ -24,10 +24,10 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
     :param max_len: don't sample captions longer than this length
     """
 
-    assert dataset in {'coco', 'flickr8k', 'flickr30k','rsicd'}
+    assert dataset in {'rsicd'}
 
     # Read Karpathy JSON
-    with open(karpathy_json_path, 'r') as j:
+    with open(json_path, 'r') as j:
         data = json.load(j)
 
     # Read image paths and captions for each image
@@ -50,7 +50,7 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
         if len(captions) == 0:
             continue
 
-        path = os.path.join(image_folder, img['filepath'], img['filename']) if dataset == 'coco' else os.path.join(
+        path = os.path.join(
             image_folder, img['filename'])
 
         if img['split'] in {'train'}:
@@ -93,7 +93,7 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
             h.attrs['captions_per_image'] = captions_per_image
 
             # Create dataset inside HDF5 file to store images
-            images = h.create_dataset('images', (len(impaths), 3, 256, 256), dtype='uint8')
+            images = h.create_dataset('images', (len(impaths), 3, 224, 224), dtype='uint8')
 
             print("\nReading %s images and captions, storing to file...\n" % split)
 
@@ -117,10 +117,10 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
                      img = img[:, :, np.newaxis]
                      img = np.concatenate([img, img, img], axis=2)
 
-                img = cv2.resize(img,(256,256))
+                img = cv2.resize(img,(224,224))
                 img = img.transpose(2, 0, 1)
 
-                assert img.shape == (3, 256, 256)
+                assert img.shape == (3, 224, 224)
                 assert np.max(img) <= 255
 
                 # Save image to HDF5 file
@@ -142,6 +142,7 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
 
             # Save encoded captions and their lengths to JSON files
             with open(os.path.join(output_folder, split + '_CAPTIONS_' + base_filename + '.json'), 'w') as j:
+
                 json.dump(enc_captions, j)
 
             with open(os.path.join(output_folder, split + '_CAPLENS_' + base_filename + '.json'), 'w') as j:
