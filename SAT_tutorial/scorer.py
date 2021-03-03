@@ -3,7 +3,8 @@ from pycocoevalcap.cider.cider import Cider
 from pycocoevalcap.meteor.meteor import Meteor
 from pycocoevalcap.rouge.rouge import Rouge
 from pycocoevalcap.spice.spice import Spice
-from bert_score import score as bert_sc
+from bert_score import BERTScorer
+
 from eval import *
 from bleurt import score as bleurt_sc
 import statistics
@@ -47,11 +48,9 @@ def bleu(gts,res):
 
     out_file.write('BLEU(1-4) = %s' % score + '\n')
 
-    return score
 
 def cider(gts,res):
     scorer = Cider()
-    # scorer += (hypo[0], ref1)
     (score, scores) = scorer.compute_score(gts, res)
     out_file.write('CIDEr = %s' % score + '\n')
 
@@ -59,19 +58,16 @@ def meteor(gts,res):
     scorer = Meteor()
     score, scores = scorer.compute_score(gts, res)
     out_file.write('METEOR = %s' % score + '\n')
-    return score
 
 def rouge(gts,res):
     scorer = Rouge()
     score, scores = scorer.compute_score(gts, res)
     out_file.write('ROUGE = %s' % score + '\n')
-    return score
 
 def spice(gts, res):
     scorer = Spice()
     score, scores = scorer.compute_score(gts, res)
     out_file.write('SPICE = %s' % score + '\n')
-    return score
 
 def bert_based(gts,res):
     refs, cands = [], []
@@ -82,26 +78,21 @@ def bert_based(gts,res):
         refs.append(sub_refs)
     for cand in res.values():
         cands.append(cand[0] + '.')
-    #
-    P, R, F1 = bert_sc(cands, refs, lang='en', verbose=True)
+
+    scorer = BERTScorer(lang="en", rescale_with_baseline=True)
+    P, R, F1 = scorer.score(cands, refs, verbose=True)
     out_file.write('BERTScore = %s' % F1.mean().item() + "\n")
     BERTScore = F1.mean().item()
 
-    refs_bleurt = ''
-    refs_bleurt_list =[]
-    for ref in refs:
-        for ref_cap in ref:
-            refs_bleurt_list.append(ref_cap)
-
-    cands = [x for item in cands for x in repeat(item,5)]
-
+    total_bleurt_score = []
     scorer = bleurt_sc.BleurtScorer(bleurt_checkpoint)
 
-    scores = scorer.score(refs_bleurt_list, cands, batch_size=None)
-    assert type(scores) == list
-    out_file.write('BLEURT = %s' % statistics.mean(scores))
-    BLEURT = statistics.mean(scores)
-    return BERTScore, BLEURT
+    for ref_caption,cand in zip(refs,cands):
+        bleurt_score_per_img = []
+        for ref in ref_caption:
+            bleurt_score_per_img.append(scorer.score([ref], [cand], batch_size=None)[0])
+        total_bleurt_score.append(max(bleurt_score_per_img))
+    out_file.write('BLEURT =%s' % statistics.mean(total_bleurt_score))
 
 def main():
     gts,res = open_json()
